@@ -16,8 +16,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup tap
         run: |
-          rm -rf $(brew --repository ${{github.repository}})
-          ln -s $GITHUB_WORKSPACE $(brew --repository ${{github.repository}})
+          rm -rf $(brew --repository homebrew/linuxbrew-core)
+          ln -s $GITHUB_WORKSPACE $(brew --repository homebrew/linuxbrew-core)
       - name: Build bottles
         run: |
           mkdir ~/bottles
