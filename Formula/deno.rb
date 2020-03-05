@@ -46,6 +46,7 @@ class Deno < Formula
 
     # env args for building a release build with our clang, ninja and gn
     ENV["GN"] = buildpath/"gn/out/gn"
+    ENV["GN_ARGS"] = "no_inline_line_tables=false"
     if OS.linux? || DevelopmentTools.clang_build_version < 1100
       # build with llvm and link against system libc++ (no runtime dep)
       ENV["CLANG_BASE_PATH"] = Formula["llvm"].prefix
