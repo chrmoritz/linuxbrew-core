@@ -15,9 +15,10 @@ class Deno < Formula
   depends_on "ninja" => :build
   depends_on "rust" => :build
   unless OS.mac?
-    depends_on "xz" => :build
     depends_on "pkg-config" => :build
     depends_on "pypy" => :build # use PyPy2.7 instead of python@2 on Linux
+    depends_on "xz" => :build
+    depends_on "glib"
   end
 
   depends_on :xcode => ["10.0", :build] if OS.mac? # required by v8 7.9+
@@ -31,7 +32,7 @@ class Deno < Formula
   end
 
   def install
-     # build gn with llvm clang too (g++ is too old)
+    # build gn with llvm clang too (g++ is too old)
     ENV["CXX"] = Formula["llvm"].opt_bin/"clang++"
     # use pypy for Python 2 build scripts
     ENV["PYTHON"] = Formula["pypy"].opt_bin/"pypy"
