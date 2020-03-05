@@ -16,6 +16,7 @@ class Deno < Formula
   depends_on "rust" => :build
   unless OS.mac?
     depends_on "xz" => :build
+    depends_on "pkg-config" => :build
     depends_on "pypy" => :build # use PyPy2.7 instead of python@2 on Linux
   end
 
