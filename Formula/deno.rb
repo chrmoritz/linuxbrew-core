@@ -32,26 +32,28 @@ class Deno < Formula
   end
 
   def install
-    # build gn with llvm clang too (g++ is too old)
-    ENV["CXX"] = Formula["llvm"].opt_bin/"clang++"
-    # use pypy for Python 2 build scripts
-    ENV["PYTHON"] = Formula["pypy"].opt_bin/"pypy"
-    mkdir "pypyshim" do
-      ln_s Formula["pypy"].opt_bin/"pypy", "python"
-      ln_s Formula["pypy"].opt_bin/"pypy", "python2"
+    unless OS.mac?
+      # build gn with llvm clang too (g++ is too old)
+      ENV["CXX"] = Formula["llvm"].opt_bin/"clang++"
+      # use pypy for Python 2 build scripts
+      ENV["PYTHON"] = Formula["pypy"].opt_bin/"pypy"
+      mkdir "pypyshim" do
+        ln_s Formula["pypy"].opt_bin/"pypy", "python"
+        ln_s Formula["pypy"].opt_bin/"pypy", "python2"
+      end
+      ENV.prepend_path "PATH", buildpath/"pypyshim"
     end
-    ENV.prepend_path "PATH", buildpath/"pypyshim"
 
     # Build gn from source (used as a build tool here)
     (buildpath/"gn").install resource("gn")
     cd "gn" do
-      system Formula["pypy"].opt_bin/"pypy", "build/gen.py"
+      system OS.mac? ? "python" : Formula["pypy"].opt_bin/"pypy", "build/gen.py"
       system "ninja", "-C", "out/", "gn"
     end
 
     # env args for building a release build with our clang, ninja and gn
     ENV["GN"] = buildpath/"gn/out/gn"
-    ENV["GN_ARGS"] = "no_inline_line_tables=false"
+    ENV["GN_ARGS"] = "no_inline_line_tables=false" unless OS.mac?
     if OS.linux? || DevelopmentTools.clang_build_version < 1100
       # build with llvm and link against system libc++ (no runtime dep)
       ENV["CLANG_BASE_PATH"] = Formula["llvm"].prefix
