@@ -36,6 +36,11 @@ class Deno < Formula
     ENV["CXX"] = Formula["llvm"].opt_bin/"clang++"
     # use pypy for Python 2 build scripts
     ENV["PYTHON"] = Formula["pypy"].opt_bin/"pypy"
+    mkdir "pypyshim" do
+      ln_s Formula["pypy"].opt_bin/"pypy", "python"
+      ln_s Formula["pypy"].opt_bin/"pypy", "python2"
+    end
+    ENV.prepend_path "PATH", buildpath/"pypyshim"
 
     # Build gn from source (used as a build tool here)
     (buildpath/"gn").install resource("gn")
