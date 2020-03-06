@@ -43,7 +43,7 @@ class Deno < Formula
     # Build gn from source (used as a build tool here)
     (buildpath/"gn").install resource("gn")
     cd "gn" do
-      system Formula["pypy"].opt_bin/"pypy", "build/gen.py"
+      system "python", "build/gen.py"
       system "ninja", "-C", "out/", "gn"
     end
 
