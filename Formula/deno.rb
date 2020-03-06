@@ -11,47 +11,55 @@ class Deno < Formula
     sha256 "036fa380c08bfa1d3490f8a9d151756779c53da79d14010d613f4da9b00b16cc" => :high_sierra
   end
 
-  depends_on :macos # Due to Python 2
   depends_on "llvm" => :build if OS.linux? || DevelopmentTools.clang_build_version < 1100
   depends_on "ninja" => :build
   depends_on "rust" => :build
   unless OS.mac?
+    depends_on "pkg-config" => :build
+    depends_on "pypy" => :build # use PyPy2.7 instead of python@2 on Linux
     depends_on "xz" => :build
-    depends_on "python@2"
+    depends_on "glib"
   end
 
   depends_on :xcode => ["10.0", :build] if OS.mac? # required by v8 7.9+
 
-  # Does not work with Python 3
-  # https://github.com/denoland/deno/issues/2893
-  uses_from_macos "python@2"
   uses_from_macos "xz"
 
+  # Use older revision on Linux, newer does not work.
   resource "gn" do
     url "https://gn.googlesource.com/gn.git",
-      :revision => "a5bcbd726ac7bd342ca6ee3e3a006478fd1f00b5"
+      :revision => OS.mac? ? "a5bcbd726ac7bd342ca6ee3e3a006478fd1f00b5" : "152c5144ceed9592c20f0c8fd55769646077569b"
   end
 
   def install
+    unless OS.mac?
+      # build gn with llvm clang too (g++ is too old)
+      ENV["CXX"] = Formula["llvm"].opt_bin/"clang++"
+      # use pypy for Python 2 build scripts
+      ENV["PYTHON"] = Formula["pypy"].opt_bin/"pypy"
+      mkdir "pypyshim" do
+        ln_s Formula["pypy"].opt_bin/"pypy", "python"
+        ln_s Formula["pypy"].opt_bin/"pypy", "python2"
+      end
+      ENV.prepend_path "PATH", buildpath/"pypyshim"
+    end
+
     # Build gn from source (used as a build tool here)
     (buildpath/"gn").install resource("gn")
     cd "gn" do
-      system "python", "build/gen.py"
+      system OS.mac? ? "python" : Formula["pypy"].opt_bin/"pypy", "build/gen.py"
       system "ninja", "-C", "out/", "gn"
     end
 
     # env args for building a release build with our clang, ninja and gn
     ENV["GN"] = buildpath/"gn/out/gn"
+    ENV["GN_ARGS"] = "no_inline_line_tables=false" unless OS.mac?
     if OS.linux? || DevelopmentTools.clang_build_version < 1100
       # build with llvm and link against system libc++ (no runtime dep)
       ENV["CLANG_BASE_PATH"] = Formula["llvm"].prefix
       ENV.remove "HOMEBREW_LIBRARY_PATHS", Formula["llvm"].opt_lib
     else # build with system clang
       ENV["CLANG_BASE_PATH"] = "/usr/"
-    end
-
-    unless OS.mac?
-      system "core/libdeno/build/linux/sysroot_scripts/install-sysroot.py", "--arch=amd64"
     end
 
     cd "cli" do
